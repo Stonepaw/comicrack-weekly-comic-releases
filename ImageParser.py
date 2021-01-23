@@ -18,7 +18,7 @@ clr.AddReference("HtmlAgilityPack")
 import HtmlAgilityPack
 
 clr.AddReference("System.Windows.Forms")
-from System.Windows.Forms import Application
+from System.Windows.Forms import Application, MessageBox
 
 from System.IO import Directory, File
 
@@ -47,8 +47,9 @@ class imageParser:
 					self.rssCache[rss] = imgItems
 					
 				except Exception, ex:
-					MessageBox.Show("Something went wrong accessing the rss feed. Are you connected to the internet?")
-					print str(ex)
+					# MessageBox.Show("Something went wrong accessing the images rss feed. Are you connected to the internet?")
+					# print str(ex)
+					# Now disabled as a result of 
 					return False
 		#print self.rssCache.keys()
 		return True
