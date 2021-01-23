@@ -5,11 +5,12 @@ User: Stonepaw
 """
 import re
 import clr
+
 clr.AddReference('System.Data')
 from System.Data import DataTable, DataColumn
 
 clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Application
+from System.Windows.Forms import Application, MessageBox
 
 clr.AddReference('HtmlAgilityPack')
 import HtmlAgilityPack
@@ -62,31 +63,33 @@ class ComicListParser:
             #print "Now finding the list of comics"
             x = HtmlAgilityPack.HtmlDocument()
             x.LoadHtml(entry.content)
-            nodes = x.DocumentNode.SelectNodes("p")
+            nodes = x.DocumentNode.SelectNodes("pre")
             #Find the largest paragraph in the source.
             #The largest paragraph contains the comiclist
             index = {"index": 0, "length": 0}
-            count = 0
+            comiclistNode = None
             for node in nodes:
+                if comiclistNode is None or len(node.InnerText) > len(comiclistNode.InnerText):
+                    comiclistNode = node
                 Application.DoEvents()
-                if len(node.InnerText) > index["length"]:
-                    index["index"] = count
-                    index["length"] = len(node.InnerText)
-                count += 1
 
-            #Now that we know which node the comiclist is, put those lines in an list
-            #print "Splitting lines"
+
+            if comiclistNode is None:
+                print "No comic list found"
+                return None, None
+            #Now that we know which node the comiclist is, parse it into a csv list
             try:
-                comiclist = HtmlEntity.DeEntitize(nodes[index["index"]].InnerText).splitlines()
+                comiclist = HtmlEntity.DeEntitize(nodes[0].InnerHtml).replace('<br>', '\n').splitlines()
             except Exception, ex:
                 print ex
                 print "Something failed"
-                return none, none
-            #print len(comiclist)
+                return None, None
             
             #Don't need these
             del(x)
             del(nodes)
+
+            # print comiclist
             
             count = 1
             #Go through all the lines in the list execpt the first one which is the definitions.
@@ -98,16 +101,18 @@ class ComicListParser:
                     #Using python list doesn't work, so use System.Array
                     l = System.Array[str](line.strip().replace('"', '').split(','))
                     row = data.NewRow()
+
+                    date, code, publisher, title, price = l
     
                     row["ID"] = count
                     count += 1
-                    row["Publisher"] = l[1]
+                    row["Publisher"] = publisher
                     
-                    if not l[1] in publisherlist and not l[1] in self.BlackList:
-                        publisherlist.append(l[1])
-                    row["Title"] = l[2]
-                    if len(l) > 3:
-                        row["Price"] = l[3]
+                    if not publisher in publisherlist and not publisher in self.BlackList:
+                        publisherlist.append(publisher)
+                    row["Title"] = title
+                    if price:
+                        row["Price"] = price
                     else:
                         row["Price"] = ""
                     row["Image"] = ""
@@ -167,6 +172,7 @@ class ComicListParser:
                 data.AcceptChanges()
 
             row2["Publishers"] = u",".join(publisherlist)
+            print "Done parsing"
             return row2, data
         else:
             print "Rss already downloaded"

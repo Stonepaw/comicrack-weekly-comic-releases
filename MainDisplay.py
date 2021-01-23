@@ -471,11 +471,13 @@ class MainDisplay(Form):
 		try:
 			rssItems = xml2py.parse("http://feeds2.feedburner.com/ncrl")
 		except System.Net.WebException, ex:
+			print("Something went wrong accessing the rss feed. Are you connected to the internet?")
 			MessageBox.Show("Something went wrong accessing the rss feed. Are you connected to the internet?")
 			p.Close()
 			p.Dispose()
 			return
 		except Exception, ex:
+			print("An unknown error occured accessing the rss feed.")
 			MessageBox.Show("An unknown error occured accessing the rss feed.")
 			p.Close()
 			p.Dispose()
@@ -495,6 +497,7 @@ class MainDisplay(Form):
 						
 			#For some reason I couldn't get list.reverse to work so...
 			entries = []
+
 			for item in rssItems.entry:
 				entries.insert(0, item)
 				Application.DoEvents()
@@ -510,12 +513,9 @@ class MainDisplay(Form):
 					print "Returned data successfully"
 					if self.Settings.DownloadCovers:
 						success = imgParser.LoadRss()
-						if not success:
-							p.Close()
-							p.Dispose()
-							return
-						p.Text = "Downloading Covers for week of " +  newdatatable.TableName
-						imgParser.ParseImages(newdatatable.TableName, newdatatable)
+						if success:
+							p.Text = "Downloading Covers for week of " +  newdatatable.TableName
+							imgParser.ParseImages(newdatatable.TableName, newdatatable)
 					try:
 						#Important to insert the new row at the top position so that they are in order of most recent.
 						self.ComicList.Data.Tables["WeekList"].Rows.InsertAt(weeklistrow, 0)
